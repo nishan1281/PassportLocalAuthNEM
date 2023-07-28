@@ -78,27 +78,53 @@ app.post("/register", async (req, res)=>{
         res.status(500).send(error.message)};
 });
 
-//login : get to return login page
-app.get("/login", (req, res)=>{
-    res.render("login");        
-});
-
-//login : post to handle user data after submitting login information
-app.post('/login', 
-  passport.authenticate('local', { 
-  failureRedirect: '/login',
-  successRedirect: '/profile',}),
+//checking login status
+const checkLoggedIn = (req, res, next) => {
+    if (req.isAuthenticated()) {
+      return res.redirect("/profile");
+    }
+    next();
+  };
+  
+  // login : get
+  app.get("/login", checkLoggedIn, (req, res) => {
+    res.render("login");
+  });
+  
+  // login : post
+  app.post(
+    "/login",
+    passport.authenticate("local", {
+      failureRedirect: "/login",
+      successRedirect: "/profile",
+    })
   );
+  
+  const checkAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) {
+      return next();
+    }
+    res.redirect("/login");
+  };
+  
+  // profile protected route
+  app.get("/profile", checkAuthenticated, (req, res) => {
+    res.render("profile");
+  });
+  
 
-
-//profie: protected route
-app.get("/profile", (req, res)=>{
-    res.render("profile"); 
-});  
-
-//logout rout
-app.get("/logout", (req, res)=>{
-    res.redirect("/"); 
-});  
+//logout route
+app.get("/logout", (req, res) => {
+    try {
+      req.logout((err) => {
+        if (err) {
+          return next(err);
+        }
+        res.redirect("/");
+      });
+    } catch (error) {
+      res.status(500).send(error.message);
+    }
+  });
 
 module.exports = app;
