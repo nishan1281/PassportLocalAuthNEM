@@ -6,9 +6,15 @@ const morgan = require("morgan");
 require("./config/database");
 const User = require ("./models/user.model")
 
-//for password encryption
+//1 for password encryption
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+
+//1.1 to save session in database
+var session = require('express-session')
+
+//1.2 to authenticate the user with password
+const passport = require('passport');    
 
 
 app.set("view engine", "ejs");
