@@ -6,6 +6,11 @@ const morgan = require("morgan");
 require("./config/database");
 const User = require ("./models/user.model")
 
+//for password encryption
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+
 app.set("view engine", "ejs");
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -27,10 +32,21 @@ app.post("/register", async (req, res)=>{
     try{
         const user = await User.findOne({username: req.body.username});
         if(user) return res.status(201).send("User is already registered");
-        const newUser = new User(req.body);
-        await newUser.save();
-        res.status(201).redirect("/login");
+        
+        //encrypting password
+        bcrypt.hash(req.body.password, saltRounds, async function(err, hash) {
+            const newUser = new User({
+                username: req.body.username,
+                //here req.body.password is sent to becrypt and hash is placed in return
+                password : hash  
+            });
+            await newUser.save();
+            res.status(201).redirect("/login");
+            // Store hash in your password DB.
+        });
     }
+
+
     catch(error){
         res.status(500).send(error.message)};
 });
