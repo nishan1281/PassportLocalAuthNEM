@@ -2,14 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const ejs = require('ejs');
 const app = express();
-const morgan = require("morgan")
-app.use(morgan("combined"));
+const morgan = require("morgan");
 require("./config/database");
+const User = require ("./models/user.model")
 
 app.set("view engine", "ejs");
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(morgan("dev"));
 
 //base URL
 app.get("/", (req, res)=>{
@@ -22,9 +23,13 @@ app.get("/register", (req, res)=>{
 });
 
 //register : post to handle user data
-app.post("/register", (req, res)=>{
+app.post("/register", async (req, res)=>{
     try{
-        res.status(201).send("User is created successfully");
+        const user = await User.findOne({username: req.body.username});
+        if(user) return res.status(201).send("User is already registered");
+        const newUser = new User(req.body);
+        await newUser.save();
+        res.status(201).redirect("/login");
     }
     catch(error){
         res.status(500).send(error.message)};
