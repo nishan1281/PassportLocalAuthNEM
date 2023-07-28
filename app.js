@@ -3,15 +3,19 @@ const cors = require('cors');
 const ejs = require('ejs');
 const app = express();
 const morgan = require("morgan");
+require("dotenv").config();
 require("./config/database");
 const User = require ("./models/user.model")
+require("./config/passport")
 
 //1 for password encryption
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 //1.1 to save session in database
-var session = require('express-session')
+const session = require('express-session');
+const MongoStore = require('connect-mongo'); //to store session
+
 
 //1.2 to authenticate the user with password
 const passport = require('passport');    
@@ -22,6 +26,23 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan("dev"));
+
+//code from API documentation for seeson store
+app.set('trust proxy', 1) // trust first proxy
+app.use(session({
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URL,
+    collectionName: "sessions",
+  })
+ // cookie: { secure: true }
+}))
+
+app.use(passport.initialize()) //to initialize passport when call to route
+app.use(passport.session()) //to use the session for authentication
+
 
 //base URL
 app.get("/", (req, res)=>{
@@ -63,14 +84,11 @@ app.get("/login", (req, res)=>{
 });
 
 //login : post to handle user data after submitting login information
-app.post("/login", (req, res)=>{
-    try{
-        res.status(200).send("login successfully");
-    }
-    catch(error){
-        res.status(500).send(error.message);
-    };  
-});
+app.post('/login', 
+  passport.authenticate('local', { 
+  failureRedirect: '/login',
+  successRedirect: '/profile',}),
+  );
 
 
 //profie: protected route
